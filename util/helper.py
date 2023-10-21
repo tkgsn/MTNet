@@ -149,8 +149,9 @@ class Benchmarker:
             dist_des += jsd(des_density[eid], self.des_density[eid])
             dist_route += jsd(route_density[eid], self.route_density[eid])
             src_num += 1.
-        dist_des /= src_num
-        dist_route /= src_num
+        if src_num > 0:
+            dist_des /= src_num
+            dist_route /= src_num
         return dist_des, dist_route
 
     def eval(self, gen, epoch):

@@ -140,7 +140,7 @@ class GenDataset(Dataset):
     def __getitem__(self, index):
         traj = self.trajs[index]
         y_idx_flat = (self.adjs[traj[:-1]] == traj[1:].unsqueeze(-1)).nonzero()[:, -1]  # B*L
-        print(traj.shape, y_idx_flat.shape)
+        assert traj.shape[0]-1 == y_idx_flat.shape[0], 'traj shape: %s, y_idx_flat shape: %s' % (traj.shape, y_idx_flat.shape)
         return (traj[:-1].long(), self.dpt_slots[index].long(), self.tcosts[index], y_idx_flat)
 
 def process_tdpts(tdpts):

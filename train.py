@@ -77,7 +77,7 @@ def main():
     settings = init()
     adjs = load_edgeadjs()
     ttts, ttts_test = load_trajs_raw()
-    loader = DataLoader(GenDataset(adjs, *ttts), config.BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=1)
+    loader = DataLoader(GenDataset(adjs, *ttts), config.BATCH_SIZE, shuffle=True, pin_memory=True)
     bm = Benchmarker(adjs, *ttts)
     name = get_full_name(settings, 'mtnet')
     gen = mtnet.Model()

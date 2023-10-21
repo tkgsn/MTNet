@@ -9,7 +9,9 @@ from my_utils import load
 from grid import Grid
 
 
-def run(path):
+def run(path, save_path):
+    save_path = pathlib.Path(save_path)
+    # load
     with open(pathlib.Path(path).parent / "params.json", "r") as f:
         param = json.load(f)
     n_bins = param["n_bins"]
@@ -17,22 +19,56 @@ def run(path):
     lon_range = param["lon_range"]
     distance_matrix = np.load(pathlib.Path(path).parent.parent.parent / f"distance_matrix_bin{n_bins}.npy")
 
-    trajectories = load(path)
+    edges, edges_properties, adjs = make_edge_properties(lat_range, lon_range, n_bins, distance_matrix)
+    # make edge_property file
+    with open(save_path / "edge_property.txt", "w") as f:
+        for i in range(1, len(edges_properties)+1):
+            from_lat = edges_properties[i-1][3][0][0]
+            from_lon = edges_properties[i-1][3][0][1]
+            to_lat = edges_properties[i-1][3][1][0]
+            to_lon = edges_properties[i-1][3][1][1]
+            f.write(f'{i},{edges_properties[i-1][0]},{edges_properties[i-1][1]},{edges_properties[i-1][2]},LINESTRING"({from_lat} {from_lon},{to_lat} {to_lon})"\n')
+    
+    # make id_to_edge file
+    id_to_edge = {}
+    for i in range(1, len(edges_properties)+1):
+        id_to_edge[i] = edges[i-1]
+    with open(save_path / "id_to_edge.json", "w") as f:
+        json.dump(id_to_edge, f)
+    edge_to_id = {v:k for k,v in id_to_edge.items()}
 
-    trajs = convert(trajectories, lat_range, lon_range, n_bins, distance_matrix)
-    with open("trajs_demo.csv", "w") as f:
+    # make adjs file
+    max_n_adjs = 4
+    with open(save_path / "edge_adj.txt", "w") as f:
+        for edge in edges:
+            end_location = edge[-1]
+            if len(edge) == 1:
+                adj_edges = adjs[end_location]
+            else:
+                adj_edges = adjs[end_location]
+                # remove the edge that reverse the direction
+                # adj_edges = [adj_edge for adj_edge in adj_edges if adj_edge != (edge[1],edge[0])]
+            
+            adj_edge_ids = [edge_to_id[adj_edge] for adj_edge in adj_edges]
+            # padding with -1
+            adj_edge_ids.extend([-1]*(max_n_adjs-len(adj_edge_ids)))
+            f.write(f',{",".join([str(adj_edge_id) for adj_edge_id in adj_edge_ids])}\n')
+
+    # make trajectory file
+    trajectories = load(path)
+    trajs = convert(trajectories, edge_to_id, n_bins)
+    with open(save_path / "trajs_demo.csv", "w") as f:
         for traj in trajs:
             f.write(" ".join([str(vocab) for vocab in traj] + [str(0)])+"\n")
 
+    # make time file
     time_trajectories = load(pathlib.Path(path).parent / "training_data_time.csv")
     time_trajs = convert_time(time_trajectories)
-    with open("tstamps_demo.csv", "w") as f:
+    with open(save_path / "tstamps_demo.csv", "w") as f:
         for traj in time_trajs:
             f.write(" ".join([str(vocab) for vocab in traj])+"\n")
 
-def convert(trajectories, lat_range, lon_range, n_bins, distance_matrix):
-
-    edge_to_id = write_edge_properties(lat_range, lon_range, n_bins, distance_matrix)
+def convert(trajectories, edge_to_id, n_bins):
     
     new_trajectories = []
     # we first convert a trajectory to a list of edges
@@ -94,38 +130,6 @@ def compliment_edge(edge, n_bins):
 
     return edges
 
-
-def write_edge_properties(lat_range, lon_range, n_bins, distance_matrix):
-    edges, edges_properties, adjs = make_edge_properties(lat_range, lon_range, n_bins, distance_matrix)
-    with open("edge_property.txt", "w") as f:
-        for i in range(1, len(edges_properties)+1):
-            from_lat = edges_properties[i-1][3][0][0]
-            from_lon = edges_properties[i-1][3][0][1]
-            to_lat = edges_properties[i-1][3][1][0]
-            to_lon = edges_properties[i-1][3][1][1]
-            f.write(f'{i},{edges_properties[i-1][0]},{edges_properties[i-1][1]},{edges_properties[i-1][2]},LINESTRING"({from_lat} {from_lon},{to_lat} {to_lon})"\n')
-    
-    edge_to_id = {}
-    for i in range(1, len(edges_properties)+1):
-        edge_to_id[edges[i-1]] = i
-
-    max_n_adjs = 4
-    with open("edge_adj.txt", "w") as f:
-        for edge in edges:
-            end_location = edge[-1]
-            if len(edge) == 1:
-                adj_edges = adjs[end_location]
-            else:
-                adj_edges = adjs[end_location]
-                # remove the edge that reverse the direction
-                adj_edges = [adj_edge for adj_edge in adj_edges if adj_edge != (edge[1],edge[0])]
-            
-            adj_edge_ids = [edge_to_id[adj_edge] for adj_edge in adj_edges]
-            # padding with -1
-            adj_edge_ids.extend([-1]*(max_n_adjs-len(adj_edge_ids)))
-            f.write(f',{",".join([str(adj_edge_id) for adj_edge_id in adj_edge_ids])}\n')
-    
-    return edge_to_id
 
 def make_edge_properties(lat_range, lon_range, n_bins, distance_matrix):
 
@@ -199,3 +203,6 @@ def add_aux_info_to_edge(edge, distance_matrix, state_to_latlon):
     else:
         raise ValueError("edge length must be 1 or 2")
     return length, road_type, heading, (from_latlon, to_latlon)
+
+if __name__ == "__main__":
+    run(sys.argv[1], sys.argv[2])

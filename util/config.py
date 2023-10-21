@@ -1,16 +1,23 @@
 import torch
 import pathlib
+import numpy as np
 
 CITY = 'geolife'
 PARAM_BASE = './util/params/'
 DATA_BASE = './data/'
-SAVE_DIR = pathlib.Path("./data/syn_geolife/")
+SAVE_DIR = pathlib.Path("./data/geolife")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 RES_FILE = 'res.csv'
 
-BATCH_SIZE = 100
+# count the number of data in ./data/geolife/trajs_demo.csv
+n_data = 0
+with open(DATA_BASE + CITY + '/trajs_demo.csv', 'r') as f:
+    for line in f:
+        n_data += 1
+BATCH_SIZE = int(np.sqrt(n_data))
+
 EPOCHS = 50
 TRAJ_FIX_LEN = 21
 
@@ -21,7 +28,7 @@ LAMBDA = 0.1
 LSTMS_NUM = 2
 L2_NUM = 1
 
-device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')  # + str(torch.cuda.device_count() - 1)
+device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')  # + str(torch.cuda.device_count() - 1)
 
 USE_PER = 1
 # SPLIT_PER = 1/30
@@ -40,7 +47,7 @@ TRIM_STOP = True  # true if extra 0 along traj line
 
 EPSILON = 1e-3
 
-DP = False
+DP = True
 
 ROAD_TYPES = 7
 HEADING_DIM = 2
