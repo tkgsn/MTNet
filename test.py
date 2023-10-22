@@ -1,8 +1,18 @@
 import unittest
 import json
 from make_training_data import make_edges, convert, compliment_edge, run
+from convert_to_original_format import convert_to_original_format
+import pathlib
 
-class TestSample(unittest.TestCase):
+class TestConvertToOriginalFormat(unittest.TestCase):
+    def setUp(self):
+        self.test_data_path = "./data/test"
+
+    def test_convert(self):
+        trajs = convert_to_original_format(self.test_data_path)
+        print(trajs[0])
+
+class TestMakeTrainingData(unittest.TestCase):
     
     def setUp(self):
         self.test_data_path = "/data/geolife/100/narrow_0_0_bin30_seed0/training_data.csv"
@@ -15,9 +25,10 @@ class TestSample(unittest.TestCase):
 
 
     def test_run(self):
-        run(self.test_data_path)
+        save_path = pathlib.Path("./data/test")
+        run(self.test_data_path, save_path)
 
-        test_data_path = "trajs_demo.csv"
+        test_data_path = save_path / "trajs_demo.csv"
         trajs = []
         with open(test_data_path, "r") as f:
             for line in f:
@@ -25,7 +36,7 @@ class TestSample(unittest.TestCase):
 
         # check if the all two consecutive edges are neighbors
         # load id_to_edge.json
-        with open("id_to_edge.json", "r") as f:
+        with open(save_path / "id_to_edge.json", "r") as f:
             id_to_edge = json.load(f)
         id_to_edge = {int(k):v for k,v in id_to_edge.items()}
         for traj in trajs:
@@ -44,7 +55,7 @@ class TestSample(unittest.TestCase):
                     self.assertEqual(edge1[1], edge2[0])
 
         # test the edge_adj.txt file
-        with open("edge_adj.txt", "r") as f:
+        with open(save_path / "edge_adj.txt", "r") as f:
             for i, line in enumerate(f):
                 to_location = id_to_edge[i+1][-1]
 
