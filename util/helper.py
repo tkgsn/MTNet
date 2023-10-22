@@ -41,7 +41,7 @@ class Logger:
         else:
             self.model = model
         self.bm = bm
-        self.earlystop = EarlyStopping(path=config.PARAM_BASE + model_name + '_best.pth')
+        self.earlystop = EarlyStopping(path=str(config.PARAM_BASE) + "/" + model_name + '_best.pth')
         self.watches = ['loss', 'loss_x', 'loss_t', 'acc_t', 'eval_des', 'eval_route', 'eval_t']
         for attr in self.watches: setattr(self, attr, [])
         self.epoch = 0
@@ -59,7 +59,7 @@ class Logger:
 
     def load_history(self):
         try:
-            check_point = torch.load(config.PARAM_BASE + self.name + '.pth', map_location=config.device)
+            check_point = torch.load(config.PARAM_BASE + "/" + self.name + '.pth', map_location=config.device)
             self.epoch = check_point['epoch']
             try:
                 self.model.load_state_dict(check_point['state'])
@@ -77,7 +77,7 @@ class Logger:
         attrs = {attr: getattr(self, attr) for attr in self.watches}
         attrs['epoch'] = epoch
         attrs['state'] = self.model.state_dict()
-        torch.save(attrs, config.PARAM_BASE + self.name + '.pth')
+        torch.save(attrs, str(config.PARAM_BASE) + self.name + '.pth')
         if epoch == config.EPOCHS - 1 or self.earlystop.early_stop:  # dump result, error for one eval,from 100->200
             if not path.exists(config.DATA_BASE + config.CITY + config.RES_FILE):
                 with open(config.DATA_BASE + config.CITY + config.RES_FILE, 'w') as f:
@@ -224,7 +224,7 @@ def get_n_params(model):
 
 
 def get_full_name(settings, model):
-    model_name = config.CITY + '\t' + model + '\tB:' + str(
+    model_name = config.NAME + '\t' + model + '\tB:' + str(
         config.BATCH_SIZE) + '\tused' + str(config.USE_PER * 100) + '%' + '\tTL:' + str(
         config.TRAJ_FIX_LEN - 1) + '\tLMDA:' + str(config.LAMBDA) + ' #RNN:' + str(
         config.LSTMS_NUM) + ' #L2:' + str(config.L2_NUM)

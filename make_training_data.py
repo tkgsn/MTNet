@@ -205,4 +205,6 @@ def add_aux_info_to_edge(edge, distance_matrix, state_to_latlon):
     return length, road_type, heading, (from_latlon, to_latlon)
 
 if __name__ == "__main__":
+    save_path = pathlib.Path(sys.argv[2])
+    save_path.mkdir(parents=True, exist_ok=True)
     run(sys.argv[1], sys.argv[2])

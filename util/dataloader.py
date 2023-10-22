@@ -24,8 +24,8 @@ def load_trajs_raw():
     # time_data_name = 'start_added_tstamps_demo.csv'
     data_name = 'trajs_demo.csv'
     time_data_name = 'tstamps_demo.csv'
-    with open(os.path.join(config.DATA_BASE + config.CITY, data_name), "r") as ftraj:
-        with open(os.path.join(config.DATA_BASE + config.CITY, time_data_name), 'r') as ft:  # read trajs and tstamps
+    with open(os.path.join(config.SAVE_DIR, data_name), "r") as ftraj:
+        with open(os.path.join(config.SAVE_DIR, time_data_name), 'r') as ft:  # read trajs and tstamps
             for line_traj, line_t in zip(ftraj, ft):
                 traj = [int(x) for x in line_traj.split()]
                 if config.TRIM_STOP: traj = traj[:-1]  # trim last stop_edge flag
@@ -63,7 +63,7 @@ def load_trajs_raw():
             f.write(','.join([str(x) for x in traj.tolist()]) + '\n')
 
     print('%s loaded, TL=%d\t#trajs=%d (Tr=%d,Te=%d)\tPeriod=%ds\tMAX_COST=%d\tAVG_TCOST=%.1f\tAVG_LEN=%.1f' % (
-        config.CITY, config.TRAJ_FIX_LEN, trajs.shape[0], used_training, trajs.shape[0] - split_point, config.T_LOOP,
+        config.SAVE_DIR, config.TRAJ_FIX_LEN, trajs.shape[0], used_training, trajs.shape[0] - split_point, config.T_LOOP,
         config.TCOST_MAX, tcosts.sum(-1).mean().item() * config.TCOST_MAX, np.array(lens).mean()), flush=True)
     return (trajs[:used_training], tdpts[:used_training], tcosts[:used_training]), \
            (trajs[split_point:], tdpts[split_point:], tcosts[split_point:])
@@ -71,7 +71,7 @@ def load_trajs_raw():
 
 def load_eproperty(pname, dtype=float):
     edge_property = [dtype(0)]
-    with open(os.path.join(config.DATA_BASE + config.CITY, 'edge_property.txt')) as f:
+    with open(os.path.join(config.SAVE_DIR / 'edge_property.txt')) as f:
         for line in f:
             line = line.strip().split(',', maxsplit=4)  # edge_idx,road_len,road_type,heading,WKT
             edge_property.append(dtype(line[config.PIDX[pname]]))
@@ -82,7 +82,7 @@ def load_eproperty(pname, dtype=float):
 def load_edgeproperties():
     edge_property = [[0 for _ in range(config.PROPERTY_DIM)]]
     roadtype_emb = np.eye(config.ROAD_TYPES)
-    with open(os.path.join(config.DATA_BASE + config.CITY, 'edge_property.txt')) as f:
+    with open(os.path.join(config.SAVE_DIR / 'edge_property.txt')) as f:
         for line in f:
             line = line.split(',')  # edge_idx,road_len,road_type,heading,WKT
             rad = float(line[config.PIDX['heading']]) / 180. * math.pi - math.pi  # [-pi,pi]
@@ -98,7 +98,7 @@ def load_edgeproperties():
 
 def load_edgeadjs():  # default mask is -1
     adjs = []
-    with open(os.path.join(config.DATA_BASE + config.CITY, 'edge_adj.txt'), 'r') as f:
+    with open(os.path.join(config.SAVE_DIR / 'edge_adj.txt'), 'r') as f:
         for line in f:
             adjs.append([int(e) for e in line.strip(',').split(',')])
             # if adjs[-1][0] == -1: adjs[-1][0] = STOP_EDGE  # dead road

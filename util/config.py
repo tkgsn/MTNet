@@ -2,18 +2,16 @@ import torch
 import pathlib
 import numpy as np
 
-CITY = 'geolife'
-PARAM_BASE = './util/params/'
-DATA_BASE = './data/'
-SAVE_DIR = pathlib.Path("./data/geolife")
+NAME="geolife"
+SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/MTNet")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
-
+PARAM_BASE = SAVE_DIR
 
 RES_FILE = 'res.csv'
 
 # count the number of data in ./data/geolife/trajs_demo.csv
 n_data = 0
-with open(DATA_BASE + CITY + '/trajs_demo.csv', 'r') as f:
+with open(SAVE_DIR / 'trajs_demo.csv', 'r') as f:
     for line in f:
         n_data += 1
 BATCH_SIZE = int(np.sqrt(n_data))
@@ -47,7 +45,7 @@ TRIM_STOP = True  # true if extra 0 along traj line
 
 EPSILON = 1e-3
 
-DP = True
+DP = False
 
 ROAD_TYPES = 7
 HEADING_DIM = 2

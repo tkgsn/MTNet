@@ -2,7 +2,17 @@ import unittest
 import json
 from make_training_data import make_edges, convert, compliment_edge, run
 from convert_to_original_format import convert_to_original_format
+from evaluate import run as evaluation
 import pathlib
+
+class TestEvaluate(unittest.TestCase):
+    def setUp(self):
+        self.test_data_path = "/data/results/geolife/0/narrow_0_0_bin30_seed0/MTNet"
+        self.original_data_path = "/data/geolife/0/narrow_0_0_bin30_seed0/"
+        self.save_path = "/data/results/geolife/0/narrow_0_0_bin30_seed0/MTNet"
+
+    def test_run(self):
+        evaluation(self.test_data_path, self.original_data_path, self.save_path)
 
 class TestConvertToOriginalFormat(unittest.TestCase):
     def setUp(self):
