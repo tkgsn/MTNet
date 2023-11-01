@@ -18,4 +18,9 @@ This includes virtual edges that represent the start location
 That is, the number of virutal edgese is identical to the number of lcoations
 Note that the start vocab only appears in the first location
 
+- TRIM_STOP
+We replace the processing about TRAJ_FIX_LEN for the comparison purpose
+remove the data -> clip the traj so that the traj has TRAJ_FIX_LEN length
+: this is a problem of this method
+
 For the Chengdu dataset, we use the provided configure data

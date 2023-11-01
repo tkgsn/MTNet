@@ -10,14 +10,13 @@ from grid import Grid
 
 
 def run(path, save_path):
-    save_path = pathlib.Path(save_path)
     # load
-    with open(pathlib.Path(path).parent / "params.json", "r") as f:
+    with open(path.parent / "params.json", "r") as f:
         param = json.load(f)
     n_bins = param["n_bins"]
     lat_range = param["lat_range"]
     lon_range = param["lon_range"]
-    distance_matrix = np.load(pathlib.Path(path).parent.parent.parent / f"distance_matrix_bin{n_bins}.npy")
+    distance_matrix = np.load(path.parent.parent.parent / f"distance_matrix_bin{n_bins}.npy")
 
     edges, edges_properties, adjs = make_edge_properties(lat_range, lon_range, n_bins, distance_matrix)
     # make edge_property file
@@ -29,7 +28,7 @@ def run(path, save_path):
             to_lon = edges_properties[i-1][3][1][1]
             f.write(f'{i},{edges_properties[i-1][0]},{edges_properties[i-1][1]},{edges_properties[i-1][2]},LINESTRING"({from_lat} {from_lon},{to_lat} {to_lon})"\n')
     
-    # make id_to_edge file
+    # make id_to_edge file (edge is (from_state, to_state))
     id_to_edge = {}
     for i in range(1, len(edges_properties)+1):
         id_to_edge[i] = edges[i-1]
@@ -75,7 +74,7 @@ def convert(trajectories, edge_to_id, n_bins):
     for traj in trajectories:
         # edge_traj has a special vocab in the first place that represents the start place of the trajectory
         new_traj = [edge_to_id[(traj[0],)]]
-        # compliment and convert
+        # compensate and convert
         edge_traj = convert_traj_to_edges(traj, n_bins)
         for edge in edge_traj:
             if edge_to_id[edge] != new_traj[-1]:
@@ -100,15 +99,15 @@ def convert_traj_to_edges(traj, n_bins):
         from_state = traj[i]
         to_state = traj[i+1]
         edge = (from_state,to_state)
-        new_edges = compliment_edge(edge, n_bins)
+        new_edges = compensate_edge(edge, n_bins)
 
         new_traj.extend(new_edges)
     return new_traj
 
 
-def compliment_edge(edge, n_bins):
+def compensate_edge(edge, n_bins):
     '''
-    In the case, the edge is not neighboring, we compliment the edge by adding the edges between the two states
+    In the case, the edge is not neighboring, we compensate the edge by adding the edges between the two states
     the route is the hamming way, from the direction of x-axis to the direction of y-axis
     '''
 
@@ -196,7 +195,6 @@ def add_aux_info_to_edge(edge, distance_matrix, state_to_latlon):
         elif edge[0] == edge[1] - n_locations_in_x:
             heading = 0
         else:
-            print(edge)
             raise ValueError("edge must be neighboring")
         road_type = 1
         length = distance_matrix[edge[0]][edge[1]]
@@ -204,7 +202,104 @@ def add_aux_info_to_edge(edge, distance_matrix, state_to_latlon):
         raise ValueError("edge length must be 1 or 2")
     return length, road_type, heading, (from_latlon, to_latlon)
 
+
+def run_chengdu(data_path, save_path, num_data, seed, setting_path):
+
+    # make id_to_edge.json
+    with open(setting_path, "r") as f:
+        param = json.load(f)
+    n_bins = param["n_bins"]
+    lat_range = param["lat_range"]
+    lon_range = param["lon_range"]
+    print("make grid of ", lat_range, lon_range, n_bins)
+    ranges = Grid.make_ranges_from_latlon_range_and_nbins(lat_range, lon_range, n_bins)
+    grid = Grid(ranges)
+    # edge is a tuple of states (first state, last state)
+    # 1,0,0,0,LINESTRING"(39.72916666666667 116.14250000000001,39.72916666666667 116.14250000000001)"
+    # first latlon (39.72916666666667 116.14250000000001) -> first state
+    # last latlon (39.72916666666667 116.14250000000001) -> last state
+    id_to_edge = {}
+    with open(data_path / "edge_property.txt", "r") as f:
+        for i, line in enumerate(f):
+            wkt = line.split("LINESTRING")[-1]
+            lonlats = wkt.split(",")
+            from_lonlat = lonlats[0].split("(")[-1]
+            to_lonlat = lonlats[-1].split(")")[0]
+            from_lonlat = tuple([float(vocab) for vocab in from_lonlat.split(" ")])
+            to_lonlat = tuple([float(vocab) for vocab in to_lonlat.split(" ")])
+            from_state = grid.latlon_to_state(*from_lonlat[::-1])
+            if from_state == None:
+                print(*from_lonlat[::-1], line)
+                raise
+            to_state = grid.latlon_to_state(*to_lonlat[::-1])
+            if to_state == None:
+                print("w", line)
+                raise
+            edge = (from_state, to_state)
+            id_to_edge[i+1] = edge
+    with open(save_path / "id_to_edge.json", "w") as f:
+        json.dump(id_to_edge, f)
+    print("save id_to_edge.json to", save_path / "id_to_edge.json")
+
+    # copy data_path / edge_property.txt to save_path / edge_property.txt
+    with open(data_path / "edge_property.txt", "r") as f:
+        lines = f.readlines()
+    with open(save_path / "edge_property.txt", "w") as f:
+        for line in lines:
+            f.write(line)
+
+    # copy data_path / edge_adj.txt to save_path / edge_adj.txt
+    with open(data_path / "edge_adj.txt", "r") as f:
+        lines = f.readlines()
+    with open(save_path / "edge_adj.txt", "w") as f:
+        for line in lines:
+            f.write(line)
+
+    # load data_path / trajs_demo.csv
+    with open(data_path / "trajs_demo.csv", "r") as f:
+        lines = f.readlines()
+
+    # load data_path / tstamps_demo.csv
+    with open(data_path / "tstamps_demo.csv", "r") as f:
+        time_lines = f.readlines()
+
+    # shuffle
+    np.random.seed(seed)
+    if num_data != 0:
+        print("shuffle trajectories and choose the first", num_data, "trajectories")
+        # shuffle trajectories and real_time_traj with the same order without using numpy
+        p = np.random.permutation(len(lines))
+        lines = [lines[i] for i in p]
+        lines = lines[:num_data]
+        time_lines = [time_lines[i] for i in p]
+        time_lines = time_lines[:num_data]
+
+    
+    # write
+    with open(save_path / "trajs_demo.csv", "w") as f:
+        for line in lines:
+            f.write(line)
+
+    with open(save_path / "tstamps_demo.csv", "w") as f:
+        for line in time_lines:
+            f.write(line)
+
+    
+
 if __name__ == "__main__":
+    data_path = pathlib.Path(sys.argv[1])
     save_path = pathlib.Path(sys.argv[2])
     save_path.mkdir(parents=True, exist_ok=True)
-    run(sys.argv[1], sys.argv[2])
+
+    dataset = sys.argv[3]
+
+    print(data_path, save_path, dataset)
+
+    if dataset == "chengdu":
+        num_data = int(sys.argv[4])
+        seed = int(sys.argv[5])
+        setting_path = pathlib.Path(sys.argv[6])
+
+        run_chengdu(data_path, save_path, num_data, seed, setting_path)
+    else:
+        run(data_path, save_path)

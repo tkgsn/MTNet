@@ -1,41 +1,53 @@
 import unittest
 import json
-from make_training_data import make_edges, convert, compliment_edge, run
+from make_training_data import make_edges, convert, compensate_edge, run
 from convert_to_original_format import convert_to_original_format
 from evaluate import run as evaluation
 import pathlib
+import os
+import sys
+
+sys.path.append("../../priv_traj_gen")
+from my_utils import plot_density, load
+from evaluation import count_route_locations
 
 class TestEvaluate(unittest.TestCase):
     def setUp(self):
         self.test_data_path = "/data/results/geolife/0/narrow_0_0_bin30_seed0/MTNet"
         self.original_data_path = "/data/geolife/0/narrow_0_0_bin30_seed0/"
-        self.save_path = "/data/results/geolife/0/narrow_0_0_bin30_seed0/MTNet"
+        self.stay_point_data_path = "/data/geolife/0/narrow_200_10_bin30_seed0/"
+        self.save_path = "/data/results/geolife/0/narrow_0_0_bin30_seed0/DP_MTNet"
 
     def test_run(self):
-        evaluation(self.test_data_path, self.original_data_path, self.save_path)
+        evaluation(self.test_data_path, self.original_data_path, self.stay_point_data_path, self.save_path)
+
+    def test_plot_density(self):
+        path = os.path.join(self.save_path, "generated_80.csv")
+        trajs = load(path)
+        counter = count_route_locations(trajs, 337)
+        plot_density(counter, 32*32, "./data/route_density.png", 337)
+
+
 
 class TestConvertToOriginalFormat(unittest.TestCase):
     def setUp(self):
-        self.test_data_path = "./data/test"
+        self.test_data_path = "./data/test/trajs_demo.csv"
 
     def test_convert(self):
         trajs = convert_to_original_format(self.test_data_path)
-        print(trajs[0])
+        print(trajs[:10])
 
 class TestMakeTrainingData(unittest.TestCase):
     
     def setUp(self):
         self.test_data_path = "/data/geolife/100/narrow_0_0_bin30_seed0/training_data.csv"
         # self.test_data_path = "/data/geolife/1000/narrow_0_0_bin30_seed0/training_data.csv"
-
-    def test_convert(self):
-        # trajs = convert(self.test_data_path)
-        # print(len(trajs))
-        pass
+        self.save_path = pathlib.Path("./data/test")
+        self.save_path.mkdir(parents=True, exist_ok=True)
 
 
     def test_run(self):
-        save_path = pathlib.Path("./data/test")
+        save_path = self.save_path
         run(self.test_data_path, save_path)
 
         test_data_path = save_path / "trajs_demo.csv"
@@ -59,8 +71,8 @@ class TestMakeTrainingData(unittest.TestCase):
                     self.assertEqual(len(edge1), 1)
                     self.assertEqual(edge1[0], edge2[0])
                 else:
-                    print(traj[i], traj[i+1])
-                    print(edge1, edge2)
+                    # print(traj[i], traj[i+1])
+                    # print(edge1, edge2)
                     self.assertEqual(len(edge1), 2)
                     self.assertEqual(edge1[1], edge2[0])
 
@@ -87,12 +99,12 @@ class TestMakeTrainingData(unittest.TestCase):
         self.assertEqual(len(edges), 2*40+25)
         self.assertEqual(adjs[0], [(0,1), (0,5)])
 
-    def test_compliment_edge(self):
-        edges = compliment_edge((0,4), 1)
+    def test_compensate_edge(self):
+        edges = compensate_edge((0,4), 1)
         self.assertEqual(edges[0], (0,1))
         self.assertEqual(edges[1], (1,4))
 
-        edges = compliment_edge((0,8), 1)
+        edges = compensate_edge((0,8), 1)
         self.assertEqual(edges[0], (0,1))
         self.assertEqual(edges[1], (1,2))
         self.assertEqual(edges[2], (2,5))

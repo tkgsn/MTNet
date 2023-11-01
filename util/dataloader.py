@@ -29,14 +29,17 @@ def load_trajs_raw():
             for line_traj, line_t in zip(ftraj, ft):
                 traj = [int(x) for x in line_traj.split()]
                 if config.TRIM_STOP: traj = traj[:-1]  # trim last stop_edge flag
-                if config.FIX_LEN and len(traj) > config.TRAJ_FIX_LEN: continue
+                if config.FIX_LEN and len(traj) > config.TRAJ_FIX_LEN:
+                    traj = traj[:config.TRAJ_FIX_LEN]
                 lens.append(len(traj))
                 traj += [0 for _ in range(len(traj), config.TRAJ_FIX_LEN)]
 
                 tdpt = [float(x) for x in line_t.split()]
+                if config.FIX_LEN and len(tdpt) > config.TRAJ_FIX_LEN + 1:
+                    tdpt = tdpt[:config.TRAJ_FIX_LEN + 1]
                 tdpt += [0 for _ in range(len(tdpt[1:]), config.TRAJ_FIX_LEN)]
                 tcost = tdpt[1:]  # T+1
-                if any([True if t >= 6000 else False for t in tcost]): continue
+                # if any([True if t >= 6000 else False for t in tcost]): continue
                 if any(map(math.isnan, tdpt)): continue  # print(tdpt)
                 if any(map(math.isnan, tcost)): continue  # print(tcost)
                 tdpts.append(tdpt)  # T+2
@@ -45,6 +48,7 @@ def load_trajs_raw():
                 # size_cnt += 1
                 # if (size_cnt >= 100000): break
                 # used_num = MAX_USE_TRAJS_NUM if len(trajs) > MAX_USE_TRAJS_NUM else len(trajs)
+    
     trajs, tdpts, tcosts = torch.LongTensor(trajs), torch.LongTensor(tdpts), torch.FloatTensor(tcosts)
     tdpts[:, 0] = (tdpts[:, 0] + 8 * 3600) % config.T_LOOP  # 8 hours offset
     for i in range(1, config.TRAJ_FIX_LEN + 1):
@@ -55,7 +59,7 @@ def load_trajs_raw():
     split_point = int(len(trajs) * config.SPLIT_PER)  # 70% to 30%, training and test
     used_training = int(config.USE_PER * split_point)
     shuffle_idx = list(range(len(trajs)))
-    random.shuffle(shuffle_idx)
+    # random.shuffle(shuffle_idx)
     trajs, tdpts, tcosts = trajs[shuffle_idx], tdpts[shuffle_idx], tcosts[shuffle_idx]
     # write trajs[:used_training] to file
     with open(os.path.join(config.SAVE_DIR / 'original_trajs.csv'), 'w') as f:

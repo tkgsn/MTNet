@@ -3,7 +3,8 @@ import pathlib
 import numpy as np
 
 NAME="geolife"
-SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/MTNet")
+SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/DP_MTNet")
+SAMPLE_SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/DP_MTNet")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
 PARAM_BASE = SAVE_DIR
 
@@ -11,26 +12,30 @@ RES_FILE = 'res.csv'
 
 # count the number of data in ./data/geolife/trajs_demo.csv
 n_data = 0
+max_len = 0
 with open(SAVE_DIR / 'trajs_demo.csv', 'r') as f:
     for line in f:
         n_data += 1
+        max_len = max(max_len, len(line.split()))
 BATCH_SIZE = int(np.sqrt(n_data))
 
 EPOCHS = 50
-TRAJ_FIX_LEN = 21
+# print("max length", max_len)
+TRAJ_FIX_LEN = 20
 
-THRESHOLD = 100
+THRESHOLD = 5
 
 LAMBDA = 0.1
 
 LSTMS_NUM = 2
 L2_NUM = 1
 
-device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')  # + str(torch.cuda.device_count() - 1)
+# device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')  # + str(torch.cuda.device_count() - 1)
 
 USE_PER = 1
 # SPLIT_PER = 1/30
-SPLIT_PER = 0.8
+# SPLIT_PER = 0.8
+SPLIT_PER = 1
 
 USE_TGRAPH = False
 TRANGE_BASE = 1800  # half an hour
@@ -45,7 +50,7 @@ TRIM_STOP = True  # true if extra 0 along traj line
 
 EPSILON = 1e-3
 
-DP = False
+DP = True
 
 ROAD_TYPES = 7
 HEADING_DIM = 2

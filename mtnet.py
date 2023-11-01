@@ -7,8 +7,7 @@ import torch
 from opacus.layers.dp_rnn import DPLSTMCell as LSTMCell
 
 class Model(nn.Module):
-    def __init__(self, z_dim=16, t_dim=48, te_dim=32, xe_dim=128, h_dim=128, o_dim=32,
-                 device=config.device):
+    def __init__(self, z_dim=16, t_dim=48, te_dim=32, xe_dim=128, h_dim=128, o_dim=32, device=None):
         super(Model, self).__init__()
         self.z_dim = z_dim
         self.register_buffer('adj', loader.load_edgeadjs())
