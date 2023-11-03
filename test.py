@@ -1,11 +1,16 @@
 import unittest
 import json
 from make_training_data import make_edges, convert, compensate_edge, run
-from convert_to_original_format import convert_to_original_format
+import make_training_data
+from convert_to_original_format import convert_to_original_format, make_edge_to_state_pair
 from evaluate import run as evaluation
 import pathlib
 import os
 import sys
+import geopandas as gpd
+import folium
+import shapely.wkt
+import shapely.geometry
 
 sys.path.append("../../priv_traj_gen")
 from my_utils import plot_density, load
@@ -34,8 +39,39 @@ class TestConvertToOriginalFormat(unittest.TestCase):
         self.test_data_path = "./data/test/trajs_demo.csv"
 
     def test_convert(self):
-        trajs = convert_to_original_format(self.test_data_path)
-        print(trajs[:10])
+        data_dir = "./data/test/geolife/training_data"
+        latlon_config_path = "/root/priv_traj_gen/dataset_configs/geolife_test.json"
+        n_bins = 2
+        edge_id_to_state_pair, _ = make_edge_to_state_pair(data_dir, latlon_config_path, n_bins)
+        path = "./data/test/geolife/results/samples_0.txt"
+        trajs = convert_to_original_format(data_dir, path, edge_id_to_state_pair)
+        print(trajs)
+
+    def test_make_edge_to_state_pair(self):
+        data_dir = "./data/test/geolife/training_data"
+        latlon_config_path = "/root/priv_traj_gen/dataset_configs/geolife_test.json"
+        n_bins = 2
+        edge_id_to_state_pair, grid = make_edge_to_state_pair(data_dir, latlon_config_path, n_bins)
+        print(edge_id_to_state_pair)
+
+        # plot by folium with anotation
+        m = folium.Map(location=[39.9, 116.4], zoom_start=12)
+
+        # gray grid
+        for key, grid_range in grid.grids.items():
+            lon_range, lat_range = grid_range
+            min_lon, max_lon = lon_range
+            min_lat, max_lat = lat_range
+            # add rectangle to map
+            folium.Rectangle(bounds=[(min_lat, min_lon), (max_lat, max_lon)], color="gray", fill=True, fill_color="gray", fill_opacity=0.2, weight=0, ).add_to(m)
+
+        for edge_id, edge in edge_id_to_state_pair.items():
+            from_state, to_state = edge
+            from_latlon = grid.state_to_center_latlon(from_state)
+            to_latlon = grid.state_to_center_latlon(to_state)
+            folium.PolyLine([from_latlon, to_latlon], color="red", weight=2, opacity=1).add_to(m)
+            folium.Marker(from_latlon, icon=folium.Icon(color="green", icon="info-sign"), popup=str(edge_id)).add_to(m)
+        m.save("./data/test/edges.html")
 
 class TestMakeTrainingData(unittest.TestCase):
     
@@ -45,6 +81,71 @@ class TestMakeTrainingData(unittest.TestCase):
         self.save_path = pathlib.Path("./data/test")
         self.save_path.mkdir(parents=True, exist_ok=True)
 
+    def test_run_geolife(self):
+        data_dir = "./data/test/geolife"
+        save_dir = "./data/test/geolife/training_data"
+
+        os.makedirs(save_dir, exist_ok=True)
+
+        make_training_data.run_geolife(data_dir, save_dir)
+        pass
+
+    def test_make_edge_property_file(self):
+        data_path = "./data/test/geolife"
+        gdf_edges = gpd.read_file(os.path.join(data_path, "edges.shp"))
+
+        make_training_data.make_edge_property_file(gdf_edges, data_path)
+
+    def test_make_edge_adj_file(self):
+        data_path = "./data/test/geolife"
+        gdf_edges = gpd.read_file(os.path.join(data_path, "edges.shp"))
+
+        make_training_data.make_edge_adj_file(gdf_edges, data_path)
+
+    def test_convert_mr_to_training(self):
+        data_path = "./data/test/geolife"
+        save_dir = "./data/test/geolife/training_data"
+        # data_path = "/data/geolife/0/map_matching"
+
+        make_training_data.convert_mr_to_training(data_path, save_dir)
+
+    def test_show_traj(self):
+        # data_path = "./data/test/geolife"
+        data_path = "/data/geolife/0/map_matching"
+        target_line = 17
+        with open(os.path.join(data_path, "trips.csv"), "r") as f:
+            for i, line in enumerate(f):
+                if i == target_line:
+                    wkt = line.split(";")[1]
+                    print(wkt)
+                    # plot by folium
+
+                    m = folium.Map(location=[39.9, 116.4], zoom_start=12)
+                    folium.GeoJson(shapely.geometry.mapping(shapely.wkt.loads(wkt))).add_to(m)
+                    m.save("./data/test/traj.html")
+                    break
+
+        with open(os.path.join(data_path, "mr.txt"), "r") as f:
+            f.readline()
+            for i, line in enumerate(f):
+                id = line.split(";")[0]
+                if id == str(target_line):
+                    edge_ids = line.split(";")[1]
+                    wkt = line.split(";")[3]
+                    print(wkt)
+                    # plot by folium
+
+                    m = folium.Map(location=[39.9, 116.4], zoom_start=12)
+                    folium.GeoJson(shapely.geometry.mapping(shapely.wkt.loads(wkt))).add_to(m)
+                    m.save("./data/test/mr.html")
+                    break
+        
+        with open(os.path.join(data_path, "training_data_time.csv"), "r") as f:
+            f.readline()
+            for j, line in enumerate(f):
+                if i == j:
+                    print(line)
+                    break
 
     def test_run(self):
         save_path = self.save_path

@@ -10,6 +10,7 @@ import pathlib
 
 def train_epoch(epoch, gen, loader, optim):
     if epoch == 0:
+    # if False:
         print("skip first epoch to evaluate the initial model")
         return float('inf'), float('inf'), float('inf'), float('inf')
     else:
@@ -96,21 +97,22 @@ def main():
 
 
 if __name__ == '__main__':
-    save_path = sys.argv[1]
-    epoch = int(sys.argv[2])
-    cuda_number = int(sys.argv[3])
+    data_dir = sys.argv[1]
+    save_dir = sys.argv[2]
+    epoch = int(sys.argv[3])
+    cuda_number = int(sys.argv[4])
     # convert string to bool
-    if sys.argv[4] == 'True':
+    if sys.argv[5] == 'True':
         config.DP = True
     else:
         config.DP = False
-    config.SAVE_DIR = pathlib.Path(save_path)
+    config.DATA_DIR = pathlib.Path(data_dir)
+    config.SAVE_DIR = pathlib.Path(save_dir)
     config.SAVE_DIR.mkdir(parents=True, exist_ok=True)
-    config.SAMPLE_SAVE_DIR = pathlib.Path(sys.argv[5])
-    config.SAMPLE_SAVE_DIR.mkdir(parents=True, exist_ok=True)
+    config.SAMPLE_SAVE_DIR = config.SAVE_DIR
     config.PARAM_BASE = config.SAVE_DIR
     n_data = 0
-    with open(config.SAVE_DIR / 'trajs_demo.csv', 'r') as f:
+    with open(config.DATA_DIR / 'training_data.csv', 'r') as f:
         for line in f:
             n_data += 1
     config.BATCH_SIZE = int(np.sqrt(n_data))

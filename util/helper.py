@@ -20,7 +20,7 @@ def draw(names, xs, ys):
         plt.plot(x, y)
         plt.savefig(name)
         plt.close()
-
+        
 
 def jsd(d1, d2):
     divergence = 0
@@ -51,7 +51,8 @@ class Logger:
         for i, loss in enumerate(self.watches[:4]): getattr(self, loss).append(losses[i])
         evals = self.bm.eval(self.model, epoch)
         for i, eval in enumerate(self.watches[4:]): getattr(self, eval).append(evals[i])
-        self.earlystop(evals[1], self.model)
+        # self.earlystop(evals[1], self.model)
+        self.earlystop(losses[1], self.model)
         print('Epoch[%d] = %.1fmins\tL = %.2f\tL[x] = %.2f,\tL[t] = %.2f\tE[des] = %.4f\tE[route] = %.4f\tE[t] = %.2f' %
               (epoch, duration / 60., losses[0], losses[1], losses[2] * config.TCOST_MAX, evals[0], evals[1], evals[2]),
               flush=True)
@@ -59,7 +60,7 @@ class Logger:
 
     def load_history(self):
         try:
-            check_point = torch.load(config.PARAM_BASE + "/" + self.name + '.pth', map_location=config.device)
+            check_point = torch.load(config.PARAM_BASE / (self.name + '.pth'), map_location=config.device)
             self.epoch = check_point['epoch']
             try:
                 self.model.load_state_dict(check_point['state'])
@@ -77,18 +78,18 @@ class Logger:
         attrs = {attr: getattr(self, attr) for attr in self.watches}
         attrs['epoch'] = epoch
         attrs['state'] = self.model.state_dict()
-        torch.save(attrs, str(config.PARAM_BASE) + self.name + '.pth')
-        if epoch == config.EPOCHS - 1 or self.earlystop.early_stop:  # dump result, error for one eval,from 100->200
-            if not path.exists(config.DATA_BASE + config.CITY + config.RES_FILE):
-                with open(config.DATA_BASE + config.CITY + config.RES_FILE, 'w') as f:
-                    head = 'name,epoch'
-                    for attr in self.watches: head += ',' + attr
-                    f.write(head + '\n')
-            with open(config.DATA_BASE + config.CITY + config.RES_FILE, 'a+') as f:
-                line = self.name + ',' + str(epoch)
-                for attr in self.watches: line += ',' + str(getattr(self, attr)[-1])
-                f.write(line + '\n')
-                print('finish training: ', self.name)
+        torch.save(attrs, config.PARAM_BASE / (self.name + '.pth'))
+        # if epoch == config.EPOCHS - 1 or self.earlystop.early_stop:  # dump result, error for one eval,from 100->200
+        #     if not path.exists(config.DATA_BASE + config.CITY + config.RES_FILE):
+        #         with open(config.DATA_BASE + config.CITY + config.RES_FILE, 'w') as f:
+        #             head = 'name,epoch'
+        #             for attr in self.watches: head += ',' + attr
+        #             f.write(head + '\n')
+        #     with open(config.DATA_BASE + config.CITY + config.RES_FILE, 'a+') as f:
+        #         line = self.name + ',' + str(epoch)
+        #         for attr in self.watches: line += ',' + str(getattr(self, attr)[-1])
+        #         f.write(line + '\n')
+        #         print('finish training: ', self.name)
 
 
 class Benchmarker:
@@ -133,7 +134,8 @@ class Benchmarker:
             src_des_num[(src, des)] = 1. if (src, des) not in src_des_num else src_des_num[(src, des)] + 1
             des_density[src][des] = 1. if des not in des_density[src] else des_density[src][des] + 1.0
             if len(traj) <= 2: continue
-            e_w = 1.0  # / (len(traj) - 2)
+            e_w = 1.0  # / (len(traj) - 2) <- result in each dim distribution (binary)
+            # e_w = 1.0 / (len(traj) -2) <- result in distribution on all locations
             for e in traj[1:-1]:  # share by the whole traj
                 route_density[src][e] = e_w if e not in route_density[src] else route_density[src][e] + e_w
         for e in range(1, len(self.adjs) - 1):  # transfer to probs.
@@ -158,32 +160,54 @@ class Benchmarker:
         samples = []
         mae_cost_acc = 0.
         costb = torch.FloatTensor(config.BATCH_SIZE, 0).to(config.device)  # empty place holder
-        for i in range(len(self.trajs) // config.BATCH_SIZE + 1):
-            lr, rr = i * config.BATCH_SIZE, (i + 1) * config.BATCH_SIZE
-            if rr > len(self.trajs): rr = len(self.trajs)
+        # for i in range(len(self.trajs) // config.BATCH_SIZE + 1):
+        #     lr, rr = i * config.BATCH_SIZE, (i + 1) * config.BATCH_SIZE
+        #     if rr > len(self.trajs): rr = len(self.trajs)
+        #     # for traj route
+        #     tb, dptb = self.trajs[lr:rr, :1].to(config.device), self.tdpts[lr:rr, :1].to(config.device)
+        #     # print("a", dptb.max())
+        #     samples_batch, _ = gen.sample(tb, dptb, costb) if not hasattr(gen, 'module') else gen.module.sample(tb, dptb, costb)
+        #     samples += (torch.cat((tb, samples_batch), 1)).tolist()  # append the fixed source
+        #     # for traj cost
+        #     yidxb = (self.adjs[self.trajs[lr:rr, :-1]] == self.trajs[lr:rr, 1:].unsqueeze(-1)).nonzero()[:,
+        #             -1].reshape(rr - lr, -1)
+        #     tb, yidxb, dptb = self.trajs[lr:rr, :-1].to(config.device), yidxb.to(config.device), self.tdpts[lr:rr].to(
+        #         config.device)
+        #     sample_costb = gen.sample_t(tb, yidxb, dptb) if not hasattr(gen, 'module') else gen.module.sample_t(
+        #         tb, yidxb, dptb)
+        #     mae_cost_acc += (sample_costb - self.tcosts[lr:rr].to(config.device)).abs().sum().item() / (
+        #             self.trajs[lr:rr, 1:] != config.STOP_EDGE).sum().item()
+
+        # change so that we can get arbitrary number of samples
+        n_generated = len(self.trajs) * 10
+        batch_for_generation = 100
+        for _ in range(n_generated // batch_for_generation):
+            indice = np.random.choice(len(self.trajs), batch_for_generation)
             # for traj route
-            tb, dptb = self.trajs[lr:rr, :1].to(config.device), self.tdpts[lr:rr, :1].to(config.device)
+            # tb, dptb = self.trajs[lr:rr, :1].to(config.device), self.tdpts[lr:rr, :1].to(config.device)
+            tb, dptb = self.trajs[indice, :1].to(config.device), self.tdpts[indice, :1].to(config.device)
             # print("a", dptb.max())
             samples_batch, _ = gen.sample(tb, dptb, costb) if not hasattr(gen, 'module') else gen.module.sample(tb, dptb, costb)
             samples += (torch.cat((tb, samples_batch), 1)).tolist()  # append the fixed source
             # for traj cost
-            yidxb = (self.adjs[self.trajs[lr:rr, :-1]] == self.trajs[lr:rr, 1:].unsqueeze(-1)).nonzero()[:,
-                    -1].reshape(rr - lr, -1)
-            tb, yidxb, dptb = self.trajs[lr:rr, :-1].to(config.device), yidxb.to(config.device), self.tdpts[lr:rr].to(
-                config.device)
-            sample_costb = gen.sample_t(tb, yidxb, dptb) if not hasattr(gen, 'module') else gen.module.sample_t(
-                tb, yidxb, dptb)
-            mae_cost_acc += (sample_costb - self.tcosts[lr:rr].to(config.device)).abs().sum().item() / (
-                    self.trajs[lr:rr, 1:] != config.STOP_EDGE).sum().item()
+            # yidxb = (self.adjs[self.trajs[lr:rr, :-1]] == self.trajs[lr:rr, 1:].unsqueeze(-1)).nonzero()[:,-1].reshape(rr - lr, -1)
+            yidxb = (self.adjs[self.trajs[indice, :-1]] == self.trajs[indice, 1:].unsqueeze(-1)).nonzero()[:,-1].reshape(batch_for_generation, -1)
+            # print("yidxb", yidxb)
+            # tb, yidxb, dptb = self.trajs[lr:rr, :-1].to(config.device), yidxb.to(config.device), self.tdpts[lr:rr].to(config.device)
+            tb, yidxb, dptb = self.trajs[indice, :-1].to(config.device), yidxb.to(config.device), self.tdpts[indice].to(config.device)
+            sample_costb = gen.sample_t(tb, yidxb, dptb) if not hasattr(gen, 'module') else gen.module.sample_t(tb, yidxb, dptb)
+            # mae_cost_acc += (sample_costb - self.tcosts[lr:rr].to(config.device)).abs().sum().item() / (self.trajs[lr:rr, 1:] != config.STOP_EDGE).sum().item()
+            mae_cost_acc += (sample_costb - self.tcosts[indice].to(config.device)).abs().sum().item() / (self.trajs[indice, 1:] != config.STOP_EDGE).sum().item()
             
         # write samples
-        with open(config.SAVE_DIR / f"samples_{epoch}.txt", 'w') as f:
+        with open(config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt", 'w') as f:
             for sample in samples:
                 f.write(','.join(list(map(str, sample))) + '\n')
 
-        assert len(samples) == len(self.trajs)
+        # assert len(samples) == len(self.trajs)
         dist_des, dist_route = self.eval_density(*self.proc_density(samples))
         mae_cost_acc = mae_cost_acc / (len(self.trajs) // config.BATCH_SIZE + 1) * config.TCOST_MAX
+        print(len(samples), "data generated to", config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt")
 
         return dist_des, dist_route, mae_cost_acc
 
