@@ -3,7 +3,6 @@ import sys
 import pathlib
 import json
 import numpy as np
-import osmnx as ox
 import geopandas as gpd
 import os
 
