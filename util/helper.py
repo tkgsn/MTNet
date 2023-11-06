@@ -18,7 +18,7 @@ def send(path):
     print('ssh', 'evaluation-server', f"'mkdir -p {path.parent}'")
     print('scp', source_file_path, destination_file_path)
     result = subprocess.run(['ssh', 'evaluation-server', f"mkdir -p {path.parent}"])
-    result = subprocess.run(['scp', source_file_path, destination_file_path])
+    result = subprocess.run(['scp', '-o', 'StrictHostKeyChecking=no', source_file_path, destination_file_path])
 
 def tstrip(traj):
     ridx = len(traj) - 1
