@@ -18,4 +18,14 @@ COPY config /root/.ssh/config
 
 RUN chmod 600 /root/.ssh/id_rsa
 
+ENV DATASET chengdu
+# dataset = {chengdu, geolife}
+ENV MAXSIZE 10000
+# 0 -> all data
+ENV SEED 0
+ENV DP False
+# False or True
+ENV EPOCH 100
+
+
 CMD ["/bin/bash", "./run_chengdu.sh"]
