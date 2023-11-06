@@ -28,7 +28,7 @@ def run(path, save_path):
             from_lon = edges_properties[i-1][3][0][1]
             to_lat = edges_properties[i-1][3][1][0]
             to_lon = edges_properties[i-1][3][1][1]
-            f.write(f'{i},{edges_properties[i-1][0]},{edges_properties[i-1][1]},{edges_properties[i-1][2]},LINESTRING"({from_lat} {from_lon},{to_lat} {to_lon})"\n')
+            f.write(f'{i},{edges_properties[i-1][0]},{edges_properties[i-1][1]},{edges_properties[i-1][2]},"LINESTRING({from_lat} {from_lon},{to_lat} {to_lon})"\n')
     
     # make id_to_edge file (edge is (from_state, to_state))
     id_to_edge = {}
@@ -218,7 +218,7 @@ def make_edge_property_file(gdf_edges, save_dir):
             wkt = row["geometry"]
             road_type = road_type_to_id[row["highway"]]
             length = row["length"]
-            f.write(f'{i+1},{road_type},0,{length},{wkt}\n')
+            f.write(f'{i+1},{road_type},0,{length},"{wkt}"\n')
 
 def make_edge_adj_file(gdf_edges, save_dir):
     # ,2,3,-1,-1
@@ -398,11 +398,11 @@ def run_chengdu(data_path, save_path, num_data, seed, setting_path):
 
     
     # write
-    with open(save_path / "trajs_demo.csv", "w") as f:
+    with open(save_path / "training_data.csv", "w") as f:
         for line in lines:
             f.write(line)
 
-    with open(save_path / "tstamps_demo.csv", "w") as f:
+    with open(save_path / "training_data_time.csv", "w") as f:
         for line in time_lines:
             f.write(line)
 
@@ -424,6 +424,8 @@ if __name__ == "__main__":
 
         run_chengdu(data_path, save_path, num_data, seed, setting_path)
     elif dataset == "geolife":
+        run_geolife(data_path, save_path)
+    elif dataset == "geolife_test":
         run_geolife(data_path, save_path)
     else:
         run(data_path, save_path)

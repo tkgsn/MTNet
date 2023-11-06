@@ -158,6 +158,7 @@ class Benchmarker:
 
     def eval(self, gen, epoch):
         samples = []
+        samples_t = []
         mae_cost_acc = 0.
         costb = torch.FloatTensor(config.BATCH_SIZE, 0).to(config.device)  # empty place holder
         # for i in range(len(self.trajs) // config.BATCH_SIZE + 1):
@@ -178,8 +179,8 @@ class Benchmarker:
         #     mae_cost_acc += (sample_costb - self.tcosts[lr:rr].to(config.device)).abs().sum().item() / (
         #             self.trajs[lr:rr, 1:] != config.STOP_EDGE).sum().item()
 
-        # change so that we can get arbitrary number of samples
-        n_generated = len(self.trajs) * 10
+        # change to get arbitrary number of samples
+        n_generated = len(self.trajs) * config.GENE_RATIO
         batch_for_generation = 100
         for _ in range(n_generated // batch_for_generation):
             indice = np.random.choice(len(self.trajs), batch_for_generation)
@@ -196,18 +197,28 @@ class Benchmarker:
             # tb, yidxb, dptb = self.trajs[lr:rr, :-1].to(config.device), yidxb.to(config.device), self.tdpts[lr:rr].to(config.device)
             tb, yidxb, dptb = self.trajs[indice, :-1].to(config.device), yidxb.to(config.device), self.tdpts[indice].to(config.device)
             sample_costb = gen.sample_t(tb, yidxb, dptb) if not hasattr(gen, 'module') else gen.module.sample_t(tb, yidxb, dptb)
+
+            samples_t += (torch.cat((torch.zeros(sample_costb.shape[0], 1, dtype=int).to(config.device), (sample_costb*config.TCOST_MAX).int()), 1)).tolist()
+
             # mae_cost_acc += (sample_costb - self.tcosts[lr:rr].to(config.device)).abs().sum().item() / (self.trajs[lr:rr, 1:] != config.STOP_EDGE).sum().item()
             mae_cost_acc += (sample_costb - self.tcosts[indice].to(config.device)).abs().sum().item() / (self.trajs[indice, 1:] != config.STOP_EDGE).sum().item()
-            
+
+        
         # write samples
         with open(config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt", 'w') as f:
             for sample in samples:
+                f.write(','.join(list(map(str, sample))) + '\n')    
+        # write samples_t
+        with open(config.SAMPLE_SAVE_DIR / f"samples_t_{epoch}.txt", 'w') as f:
+            for sample in samples_t:
                 f.write(','.join(list(map(str, sample))) + '\n')
+        
+        print(len(samples), "data generated to", config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt")
+        print(len(samples_t), "time data generated to", config.SAMPLE_SAVE_DIR / f"samples_t_{epoch}.txt")
 
         # assert len(samples) == len(self.trajs)
         dist_des, dist_route = self.eval_density(*self.proc_density(samples))
         mae_cost_acc = mae_cost_acc / (len(self.trajs) // config.BATCH_SIZE + 1) * config.TCOST_MAX
-        print(len(samples), "data generated to", config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt")
 
         return dist_des, dist_route, mae_cost_acc
 

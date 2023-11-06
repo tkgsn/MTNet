@@ -47,11 +47,11 @@ def make_edge_to_state_pair(data_path, latlon_config_path, n_bins):
     
     return edge_id_to_state_pair, grid
 
-def convert_to_original_format(training_data_dir, path, edge_id_to_state_pair):
+def convert_to_original_format(traj_path, time_path, edge_id_to_state_pair):
 
     # load data
     trajs = []
-    with open(pathlib.Path(path), "r") as f:
+    with open(pathlib.Path(traj_path), "r") as f:
         for line in f:
             traj = [int(vocab) for vocab in line.split(",")]
             # traj = [int(vocab) for vocab in line.strip().split(" ")]
@@ -65,11 +65,14 @@ def convert_to_original_format(training_data_dir, path, edge_id_to_state_pair):
         for i in range(len(traj)):
             if i == 0:
                 new_traj.append(edge_id_to_state_pair[traj[i]][0])
+                new_traj.append(edge_id_to_state_pair[traj[i]][1])
             else:
                 new_traj.append(edge_id_to_state_pair[traj[i]][1])
         new_trajs.append(new_traj)
 
-    return new_trajs
+    new_time_trajs = []
+
+    return new_trajs, new_time_trajs
 
 
 if __name__ == "__main__":
@@ -83,14 +86,16 @@ if __name__ == "__main__":
 
     edge_to_state_pair, _ = make_edge_to_state_pair(training_data_dir, latlon_config_path, n_bins)
 
-    files = [file for file in save_dir.iterdir() if file.name.startswith("samples_")]
+    print(save_dir)
+    files = [file for file in save_dir.iterdir() if file.name.startswith("samples_t_")]
     # sort
     files.sort(key=lambda x: int(x.name.split("_")[1].split(".")[0]))
     for file in files:
         # get the id
         id = file.name.split("_")[1].split(".")[0]
-        print("convert to original format: ", file)
-        trajs = convert_to_original_format(training_data_dir, file, edge_to_state_pair)
+        traj_file = file.parent / f"samples_{i}.txt"
+        print("convert to original format: ", file, "and", traj_file)
+        trajs, new_time_trajs = convert_to_original_format(traj_file, file, edge_to_state_pair)
         print("save to", save_dir / f"generated_{id}.csv")
         with open(save_dir / f"generated_{id}.csv", "w") as f:
             for traj in trajs:

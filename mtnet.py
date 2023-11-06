@@ -132,10 +132,7 @@ class Model(nn.Module):
             hs, cs = self.init_h(B, x.device)
             for i in range(L):
                 hidden, hs, cs = self.step(x[i], dpts_slots[i], hs, cs)
-                # print(hidden[1].shape, i, yidx[i], yidx.shape)
                 pred_t = torch.sigmoid(hidden[1][range(B), yidx[i]])
-                # WARNING error here
-                # pred_t = torch.zeros(B, device=x.device)
                 pred_t[yidx[i] == config.STOP_EDGE] = 0
                 samples_costs.append(pred_t)
             return torch.stack(samples_costs, 1)  # B*L

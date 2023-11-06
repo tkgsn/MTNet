@@ -37,6 +37,8 @@ USE_PER = 1
 # SPLIT_PER = 1/30
 # SPLIT_PER = 0.8
 SPLIT_PER = 1
+GENE_RATIO = 1
+
 
 USE_TGRAPH = False
 TRANGE_BASE = 1800  # half an hour

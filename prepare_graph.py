@@ -5,6 +5,7 @@ from shapely.geometry import Polygon
 from shapely.wkt import loads
 import os
 import sys
+import json
 
 sys.path.append("../../priv_traj_gen")
 from my_utils import load
@@ -53,7 +54,7 @@ def save_graph_shapefile_directional(G, filepath=None, encoding="utf-8"):
 
 def run(data_path, dataset_config_path, save_dir):
     # download graph
-    import json
+    print("load dataset config from", dataset_config_path)
     with open(dataset_config_path, "r") as f:
         config = json.load(f)
 
@@ -67,6 +68,7 @@ def run(data_path, dataset_config_path, save_dir):
     print("downloading graph of", upper_left, lower_right)
     G = ox.graph_from_bbox(north=upper_left[0], south=lower_left[0], east=upper_right[1], west=upper_left[1], network_type="drive")
     # save graph
+    print("number of nodes", len(G.nodes), "number of edges", len(G.edges))
     print("save graph")
     ox.save_graphml(G, os.path.join(save_dir, "graph.graphml"))
     
