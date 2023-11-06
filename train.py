@@ -113,7 +113,7 @@ if __name__ == '__main__':
     config.SAMPLE_SAVE_DIR = config.SAVE_DIR
 
     # training_data_dir=/data/${dataset}/${max_size}/${name}
-    training_settings = {"dataset": data_dir.split('/')[1], "data_name": data_dir.split('/')[-2], "network_type": "MTNet"}
+    training_settings = {"dataset": data_dir.split('/')[2], "data_name": data_dir.split('/')[-2], "network_type": "MTNet"}
     with open(config.SAVE_DIR / 'params.json', 'w') as f:
         json.dump(training_settings, f)
     
