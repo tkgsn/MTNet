@@ -25,20 +25,20 @@
 
 dataset=chengdu
 max_size=10000
-n_bins=30
+# n_bins=30
 seed=0
-training_data_name=200_60_bin30_seed0
-route_data_name=0_0_bin30_seed0
+# training_data_name=200_60_bin30_seed0
+# route_data_name=0_0_bin30_seed0
 training_data_dir=/data/${dataset}/${max_size}/MTNet
 original_data_dir=/data/${dataset}/raw
-route_data_dir=/data/${dataset}/${max_size}/${route_data_name}
-stay_point_data_dir=/data/${dataset}/${max_size}/${training_data_name}
-save_path=/data/results/${dataset}/${max_size}/${route_data_name}/MTNet
-setting_path=/data/${dataset}/${max_size}/0_0_bin${n_bins}_seed0/params.json
+# route_data_dir=/data/${dataset}/${max_size}/${route_data_name}
+# stay_point_data_dir=/data/${dataset}/${max_size}/${training_data_name}
+save_path=/data/results/${dataset}/${max_size}/MTNet
+# setting_path=/data/${dataset}/${max_size}/0_0_bin${n_bins}_seed0/params.json
 epoch=500
 cuda_number=0
 dp=False
-python3 make_training_data.py $original_data_dir $training_data_dir $dataset $max_size $seed $setting_path
+python3 make_training_data.py $original_data_dir $training_data_dir $dataset $max_size $seed
 python3 train.py $training_data_dir $save_path $epoch $cuda_number $dp 
 # python3 convert_to_original_format.py $training_data_dir $save_path
 # python3 evaluate.py $save_path $route_data_dir $stay_point_data_dir $save_path

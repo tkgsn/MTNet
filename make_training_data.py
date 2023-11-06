@@ -325,43 +325,43 @@ def run_geolife(data_dir, save_dir):
     make_edge_adj_file(gdf_edges, save_dir)
     convert_mr_to_training(data_dir, save_dir)
 
-def run_chengdu(data_path, save_path, num_data, seed, setting_path):
+def run_chengdu(data_path, save_path, num_data, seed):
 
-    # make id_to_edge.json
-    with open(setting_path, "r") as f:
-        param = json.load(f)
-    n_bins = param["n_bins"]
-    lat_range = param["lat_range"]
-    lon_range = param["lon_range"]
-    print("make grid of ", lat_range, lon_range, n_bins)
-    ranges = Grid.make_ranges_from_latlon_range_and_nbins(lat_range, lon_range, n_bins)
-    grid = Grid(ranges)
-    # edge is a tuple of states (first state, last state)
-    # 1,0,0,0,LINESTRING"(39.72916666666667 116.14250000000001,39.72916666666667 116.14250000000001)"
-    # first latlon (39.72916666666667 116.14250000000001) -> first state
-    # last latlon (39.72916666666667 116.14250000000001) -> last state
-    id_to_edge = {}
-    with open(data_path / "edge_property.txt", "r") as f:
-        for i, line in enumerate(f):
-            wkt = line.split("LINESTRING")[-1]
-            lonlats = wkt.split(",")
-            from_lonlat = lonlats[0].split("(")[-1]
-            to_lonlat = lonlats[-1].split(")")[0]
-            from_lonlat = tuple([float(vocab) for vocab in from_lonlat.split(" ")])
-            to_lonlat = tuple([float(vocab) for vocab in to_lonlat.split(" ")])
-            from_state = grid.latlon_to_state(*from_lonlat[::-1])
-            if from_state == None:
-                print(*from_lonlat[::-1], line)
-                raise
-            to_state = grid.latlon_to_state(*to_lonlat[::-1])
-            if to_state == None:
-                print("w", line)
-                raise
-            edge = (from_state, to_state)
-            id_to_edge[i+1] = edge
-    with open(save_path / "id_to_edge.json", "w") as f:
-        json.dump(id_to_edge, f)
-    print("save id_to_edge.json to", save_path / "id_to_edge.json")
+    # # make id_to_edge.json
+    # with open(setting_path, "r") as f:
+    #     param = json.load(f)
+    # n_bins = param["n_bins"]
+    # lat_range = param["lat_range"]
+    # lon_range = param["lon_range"]
+    # print("make grid of ", lat_range, lon_range, n_bins)
+    # ranges = Grid.make_ranges_from_latlon_range_and_nbins(lat_range, lon_range, n_bins)
+    # grid = Grid(ranges)
+    # # edge is a tuple of states (first state, last state)
+    # # 1,0,0,0,LINESTRING"(39.72916666666667 116.14250000000001,39.72916666666667 116.14250000000001)"
+    # # first latlon (39.72916666666667 116.14250000000001) -> first state
+    # # last latlon (39.72916666666667 116.14250000000001) -> last state
+    # id_to_edge = {}
+    # with open(data_path / "edge_property.txt", "r") as f:
+    #     for i, line in enumerate(f):
+    #         wkt = line.split("LINESTRING")[-1]
+    #         lonlats = wkt.split(",")
+    #         from_lonlat = lonlats[0].split("(")[-1]
+    #         to_lonlat = lonlats[-1].split(")")[0]
+    #         from_lonlat = tuple([float(vocab) for vocab in from_lonlat.split(" ")])
+    #         to_lonlat = tuple([float(vocab) for vocab in to_lonlat.split(" ")])
+    #         from_state = grid.latlon_to_state(*from_lonlat[::-1])
+    #         if from_state == None:
+    #             print(*from_lonlat[::-1], line)
+    #             raise
+    #         to_state = grid.latlon_to_state(*to_lonlat[::-1])
+    #         if to_state == None:
+    #             print("w", line)
+    #             raise
+    #         edge = (from_state, to_state)
+    #         id_to_edge[i+1] = edge
+    # with open(save_path / "id_to_edge.json", "w") as f:
+    #     json.dump(id_to_edge, f)
+    # print("save id_to_edge.json to", save_path / "id_to_edge.json")
 
     # copy data_path / edge_property.txt to save_path / edge_property.txt
     with open(data_path / "edge_property.txt", "r") as f:
@@ -420,9 +420,10 @@ if __name__ == "__main__":
         print(data_path, save_path, dataset)
         num_data = int(sys.argv[4])
         seed = int(sys.argv[5])
-        setting_path = pathlib.Path(sys.argv[6])
+        # setting_path = pathlib.Path(sys.argv[6])
 
-        run_chengdu(data_path, save_path, num_data, seed, setting_path)
+        # run_chengdu(data_path, save_path, num_data, seed, setting_path)
+        run_chengdu(data_path, save_path, num_data, seed)
     elif dataset == "geolife":
         run_geolife(data_path, save_path)
     elif dataset == "geolife_test":
