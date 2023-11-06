@@ -6,6 +6,7 @@ import mtnet
 from opacus import PrivacyEngine
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 import sys
+import json
 import pathlib
 
 def train_epoch(epoch, gen, loader, optim):
@@ -113,6 +114,8 @@ if __name__ == '__main__':
 
     # training_data_dir=/data/${dataset}/${max_size}/${name}
     training_settings = {"dataset": data_dir.split('/')[1], "data_name": data_dir.split('/')[-2], "network_type": "MTNet"}
+    with open(config.SAVE_DIR / 'training_settings.json', 'w') as f:
+        json.dump(training_settings, f)
     config.PARAM_BASE = config.SAVE_DIR
     n_data = 0
     with open(config.DATA_DIR / 'training_data.csv', 'r') as f:
