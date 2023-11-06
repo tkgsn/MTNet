@@ -1,27 +1,29 @@
 #!/bin/bash
 
-# cd ../../priv_traj_gen
+git clone https://github.com/wangyong01/MTNet_Code
 
-# dataset=chengdu
-# max_size=10000
-# data_name=${max_size}
-# latlon_config=chengdu.json
-# location_threshold=200
-# time_threshold=60
-# n_bins=30
-# seed_for_dataset=0
-# training_data_name=${location_threshold}_${time_threshold}_bin${n_bins}_seed${seed_for_dataset}
+unzip MTNet_Code
+cd MTNet_Code
+unzip MTNet.zip
+cd ..
 
-# python3 make_raw_data.py --original_data_name $dataset --max_size $max_size --seed $seed_for_dataset --save_name $data_name --n_bins $n_bins
-# python3 data_pre_processing.py --latlon_config  $latlon_config --dataset $dataset --data_name $data_name --location_threshold $location_threshold --time_threshold $time_threshold --save_name $training_data_name --n_bins $n_bins $option --seed $seed_for_dataset
+apt-get update
+apt-get install -y jq unzip
 
-# location_threshold=0
-# time_threshold=0
-# route_data_name=${location_threshold}_${time_threshold}_bin${n_bins}_seed${seed_for_dataset}
+# get the data directory from "data_dir" key of config.json
+data_dir=$(jq -r '.data_dir' config.json)
+save_dir=$data_dir/chengdu/raw
+# make save_dir
+mkdir -p $save_dir
 
-# python3 data_pre_processing.py --latlon_config  $latlon_config --dataset $dataset --data_name $data_name --location_threshold $location_threshold --time_threshold $time_threshold --save_name $route_data_name --n_bins $n_bins $option --seed $seed_for_dataset
+# move the demo dataset (./MTNet_Code/MTNet/data/demo/{edge_adj.txt, edge_property.txt, trajs_demo.csv, tstamps_demo.csv}) to save_dir
+mv ./MTNet_Code/MTNet/data/demo/edge_adj.txt $save_dir
+mv ./MTNet_Code/MTNet/data/demo/edge_property.txt $save_dir
+mv ./MTNet_Code/MTNet/data/demo/trajs_demo.csv $save_dir
+mv ./MTNet_Code/MTNet/data/demo/tstamps_demo.csv $save_dir
 
-# cd ../MTNet_Code/MTNet
+# remove MTNet_Code
+rm -rf MTNet_Code
 
 dataset=chengdu
 max_size=10000
