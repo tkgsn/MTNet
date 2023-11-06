@@ -214,8 +214,8 @@ class Benchmarker:
             # mae_cost_acc += (sample_costb - self.tcosts[lr:rr].to(config.device)).abs().sum().item() / (self.trajs[lr:rr, 1:] != config.STOP_EDGE).sum().item()
             mae_cost_acc += (sample_costb - self.tcosts[indice].to(config.device)).abs().sum().item() / (self.trajs[indice, 1:] != config.STOP_EDGE).sum().item()
 
-        save_dir = config.SAMPLE_SAVE_DIR / f"models_{epoch}"
-        (config.SAMPLE_SAVE_DIR / f"models_{epoch}").mkdir(parents=True, exist_ok=True)
+        save_dir = config.SAMPLE_SAVE_DIR / f"model_{epoch}"
+        (config.SAMPLE_SAVE_DIR / f"model_{epoch}").mkdir(parents=True, exist_ok=True)
         # write samples
         with open(save_dir / f"samples.txt", 'w') as f:
             for sample in samples:
