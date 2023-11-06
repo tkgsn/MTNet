@@ -6,67 +6,67 @@ import numpy as np
 import geopandas as gpd
 import os
 
-sys.path.append('../../priv_traj_gen')
-from my_utils import load
-from grid import Grid
+# sys.path.append('../../priv_traj_gen')
+# from my_utils import load
+# from grid import Grid
 
-def run(path, save_path):
-    # load
-    with open(path.parent / "params.json", "r") as f:
-        param = json.load(f)
-    n_bins = param["n_bins"]
-    lat_range = param["lat_range"]
-    lon_range = param["lon_range"]
-    distance_matrix = np.load(path.parent.parent.parent / f"distance_matrix_bin{n_bins}.npy")
+# def run(path, save_path):
+#     # load
+#     with open(path.parent / "params.json", "r") as f:
+#         param = json.load(f)
+#     n_bins = param["n_bins"]
+#     lat_range = param["lat_range"]
+#     lon_range = param["lon_range"]
+#     distance_matrix = np.load(path.parent.parent.parent / f"distance_matrix_bin{n_bins}.npy")
 
-    edges, edges_properties, adjs = make_edge_properties(lat_range, lon_range, n_bins, distance_matrix)
-    # make edge_property file
-    with open(save_path / "edge_property.txt", "w") as f:
-        for i in range(1, len(edges_properties)+1):
-            from_lat = edges_properties[i-1][3][0][0]
-            from_lon = edges_properties[i-1][3][0][1]
-            to_lat = edges_properties[i-1][3][1][0]
-            to_lon = edges_properties[i-1][3][1][1]
-            f.write(f'{i},{edges_properties[i-1][0]},{edges_properties[i-1][1]},{edges_properties[i-1][2]},"LINESTRING({from_lat} {from_lon},{to_lat} {to_lon})"\n')
+#     edges, edges_properties, adjs = make_edge_properties(lat_range, lon_range, n_bins, distance_matrix)
+#     # make edge_property file
+#     with open(save_path / "edge_property.txt", "w") as f:
+#         for i in range(1, len(edges_properties)+1):
+#             from_lat = edges_properties[i-1][3][0][0]
+#             from_lon = edges_properties[i-1][3][0][1]
+#             to_lat = edges_properties[i-1][3][1][0]
+#             to_lon = edges_properties[i-1][3][1][1]
+#             f.write(f'{i},{edges_properties[i-1][0]},{edges_properties[i-1][1]},{edges_properties[i-1][2]},"LINESTRING({from_lat} {from_lon},{to_lat} {to_lon})"\n')
     
-    # make id_to_edge file (edge is (from_state, to_state))
-    id_to_edge = {}
-    for i in range(1, len(edges_properties)+1):
-        id_to_edge[i] = edges[i-1]
-    with open(save_path / "id_to_edge.json", "w") as f:
-        json.dump(id_to_edge, f)
-    edge_to_id = {v:k for k,v in id_to_edge.items()}
+#     # make id_to_edge file (edge is (from_state, to_state))
+#     id_to_edge = {}
+#     for i in range(1, len(edges_properties)+1):
+#         id_to_edge[i] = edges[i-1]
+#     with open(save_path / "id_to_edge.json", "w") as f:
+#         json.dump(id_to_edge, f)
+#     edge_to_id = {v:k for k,v in id_to_edge.items()}
 
-    # make adjs file
-    max_n_adjs = 4
-    with open(save_path / "edge_adj.txt", "w") as f:
-        for edge in edges:
-            end_location = edge[-1]
-            if len(edge) == 1:
-                adj_edges = adjs[end_location]
-            else:
-                adj_edges = adjs[end_location]
-                # remove the edge that reverse the direction
-                # adj_edges = [adj_edge for adj_edge in adj_edges if adj_edge != (edge[1],edge[0])]
+#     # make adjs file
+#     max_n_adjs = 4
+#     with open(save_path / "edge_adj.txt", "w") as f:
+#         for edge in edges:
+#             end_location = edge[-1]
+#             if len(edge) == 1:
+#                 adj_edges = adjs[end_location]
+#             else:
+#                 adj_edges = adjs[end_location]
+#                 # remove the edge that reverse the direction
+#                 # adj_edges = [adj_edge for adj_edge in adj_edges if adj_edge != (edge[1],edge[0])]
             
-            adj_edge_ids = [edge_to_id[adj_edge] for adj_edge in adj_edges]
-            # padding with -1
-            adj_edge_ids.extend([-1]*(max_n_adjs-len(adj_edge_ids)))
-            f.write(f',{",".join([str(adj_edge_id) for adj_edge_id in adj_edge_ids])}\n')
+#             adj_edge_ids = [edge_to_id[adj_edge] for adj_edge in adj_edges]
+#             # padding with -1
+#             adj_edge_ids.extend([-1]*(max_n_adjs-len(adj_edge_ids)))
+#             f.write(f',{",".join([str(adj_edge_id) for adj_edge_id in adj_edge_ids])}\n')
 
-    # make trajectory file
-    trajectories = load(path)
-    trajs = convert(trajectories, edge_to_id, n_bins)
-    with open(save_path / "trajs_demo.csv", "w") as f:
-        for traj in trajs:
-            f.write(" ".join([str(vocab) for vocab in traj] + [str(0)])+"\n")
+#     # make trajectory file
+#     trajectories = load(path)
+#     trajs = convert(trajectories, edge_to_id, n_bins)
+#     with open(save_path / "trajs_demo.csv", "w") as f:
+#         for traj in trajs:
+#             f.write(" ".join([str(vocab) for vocab in traj] + [str(0)])+"\n")
 
-    # make time file
-    time_trajectories = load(pathlib.Path(path).parent / "training_data_time.csv")
-    time_trajs = convert_time(time_trajectories)
-    with open(save_path / "tstamps_demo.csv", "w") as f:
-        for traj in time_trajs:
-            f.write(" ".join([str(vocab) for vocab in traj])+"\n")
+#     # make time file
+#     time_trajectories = load(pathlib.Path(path).parent / "training_data_time.csv")
+#     time_trajs = convert_time(time_trajectories)
+#     with open(save_path / "tstamps_demo.csv", "w") as f:
+#         for traj in time_trajs:
+#             f.write(" ".join([str(vocab) for vocab in traj])+"\n")
 
 def convert(trajectories, edge_to_id, n_bins):
     
@@ -131,15 +131,15 @@ def compensate_edge(edge, n_bins):
     return edges
 
 
-def make_edge_properties(lat_range, lon_range, n_bins, distance_matrix):
+# def make_edge_properties(lat_range, lon_range, n_bins, distance_matrix):
 
-    print("make grid of ", lat_range, lon_range, n_bins)
-    ranges = Grid.make_ranges_from_latlon_range_and_nbins(lat_range, lon_range, n_bins)
-    grid = Grid(ranges)
-    edges, adjs = make_edges(n_bins)
-    aux_infos = [add_aux_info_to_edge(edge, distance_matrix, grid.state_to_center_latlon) for edge in edges]
+#     print("make grid of ", lat_range, lon_range, n_bins)
+#     ranges = Grid.make_ranges_from_latlon_range_and_nbins(lat_range, lon_range, n_bins)
+#     grid = Grid(ranges)
+#     edges, adjs = make_edges(n_bins)
+#     aux_infos = [add_aux_info_to_edge(edge, distance_matrix, grid.state_to_center_latlon) for edge in edges]
 
-    return edges, aux_infos, adjs
+#     return edges, aux_infos, adjs
 
 def make_edges(n_bins):
     # edges are made in the order of state
@@ -427,5 +427,5 @@ if __name__ == "__main__":
         run_geolife(data_path, save_path)
     elif dataset == "geolife_test":
         run_geolife(data_path, save_path)
-    else:
-        run(data_path, save_path)
+    # else:
+    #     run(data_path, save_path)
