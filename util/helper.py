@@ -7,7 +7,18 @@ from os import path
 from . import config
 from .earlystop import EarlyStopping
 import yaml
+import subprocess
 
+
+def send(path):
+
+    source_file_path = path
+    destination_file_path = f'evaluation-server:{path.parent}'
+
+    print('ssh', 'evaluation-server', f"'mkdir -p {path.parent}'")
+    print('scp', source_file_path, destination_file_path)
+    result = subprocess.run(['ssh', 'evaluation-server', f"mkdir -p {path.parent}"])
+    result = subprocess.run(['scp', source_file_path, destination_file_path])
 
 def tstrip(traj):
     ridx = len(traj) - 1
@@ -215,6 +226,9 @@ class Benchmarker:
         
         print(len(samples), "data generated to", config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt")
         print(len(samples_t), "time data generated to", config.SAMPLE_SAVE_DIR / f"samples_t_{epoch}.txt")
+
+        send(config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt")
+        send(config.SAMPLE_SAVE_DIR / f"samples_t_{epoch}.txt")
 
         # assert len(samples) == len(self.trajs)
         dist_des, dist_route = self.eval_density(*self.proc_density(samples))
