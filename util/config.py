@@ -2,23 +2,31 @@ import torch
 import pathlib
 import numpy as np
 
-NAME="geolife"
-DATA_DIR = pathlib.Path("/data/geolife/0/narrow_0_0_bin30_seed0")
-SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/DP_MTNet")
-SAMPLE_SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/DP_MTNet")
-SAVE_DIR.mkdir(parents=True, exist_ok=True)
-PARAM_BASE = SAVE_DIR
+# NAME="geolife"
+# DATA_DIR = pathlib.Path("/data/geolife/0/narrow_0_0_bin30_seed0")
+# SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/DP_MTNet")
+# SAMPLE_SAVE_DIR = pathlib.Path("/data/results/geolife/0/narrow_0_0_bin30_seed0/DP_MTNet")
+# PARAM_BASE = SAVE_DIR
+# SAVE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+NAME=""
+DATA_DIR = ""
+SAVE_DIR = ""
+SAMPLE_SAVE_DIR = ""
+PARAM_BASE = ""
 
 RES_FILE = 'res.csv'
 
 # count the number of data in ./data/geolife/trajs_demo.csv
 n_data = 0
 max_len = 0
-with open(DATA_DIR / 'training_data.csv', 'r') as f:
-    for line in f:
-        n_data += 1
-        max_len = max(max_len, len(line.split()))
-BATCH_SIZE = int(np.sqrt(n_data))
+# with open(DATA_DIR / 'training_data.csv', 'r') as f:
+    # for line in f:
+        # n_data += 1
+        # max_len = max(max_len, len(line.split()))
+# BATCH_SIZE = int(np.sqrt(n_data))
+BATCH_SIZE = 0
 
 EPOCHS = 50
 # print("max length", max_len)
