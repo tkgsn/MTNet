@@ -10,8 +10,8 @@ cd ..
 apt-get update
 apt-get install -y jq unzip
 
+data_dir=/data
 # get the data directory from "data_dir" key of config.json
-data_dir=$(jq -r '.data_dir' config.json)
 save_dir=$data_dir/chengdu/raw
 # make save_dir
 mkdir -p $save_dir
