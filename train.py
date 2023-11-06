@@ -110,6 +110,9 @@ if __name__ == '__main__':
     config.SAVE_DIR = pathlib.Path(save_dir)
     config.SAVE_DIR.mkdir(parents=True, exist_ok=True)
     config.SAMPLE_SAVE_DIR = config.SAVE_DIR
+
+    # training_data_dir=/data/${dataset}/${max_size}/${name}
+    training_settings = {"dataset": data_dir.split('/')[1], "data_name": data_dir.split('/')[-2], "network_type": "MTNet"}
     config.PARAM_BASE = config.SAVE_DIR
     n_data = 0
     with open(config.DATA_DIR / 'training_data.csv', 'r') as f:

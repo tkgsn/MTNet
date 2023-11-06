@@ -214,21 +214,22 @@ class Benchmarker:
             # mae_cost_acc += (sample_costb - self.tcosts[lr:rr].to(config.device)).abs().sum().item() / (self.trajs[lr:rr, 1:] != config.STOP_EDGE).sum().item()
             mae_cost_acc += (sample_costb - self.tcosts[indice].to(config.device)).abs().sum().item() / (self.trajs[indice, 1:] != config.STOP_EDGE).sum().item()
 
-        
+        save_dir = config.SAMPLE_SAVE_DIR / f"models_{epoch}"
+        (config.SAMPLE_SAVE_DIR / f"models_{epoch}").mkdir(parents=True, exist_ok=True)
         # write samples
-        with open(config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt", 'w') as f:
+        with open(save_dir / f"samples.txt", 'w') as f:
             for sample in samples:
                 f.write(','.join(list(map(str, sample))) + '\n')    
         # write samples_t
-        with open(config.SAMPLE_SAVE_DIR / f"samples_t_{epoch}.txt", 'w') as f:
+        with open(save_dir / f"samples_time.txt", 'w') as f:
             for sample in samples_t:
                 f.write(','.join(list(map(str, sample))) + '\n')
         
-        print(len(samples), "data generated to", config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt")
-        print(len(samples_t), "time data generated to", config.SAMPLE_SAVE_DIR / f"samples_t_{epoch}.txt")
+        print(len(samples), "data generated to", save_dir / f"samples.txt")
+        print(len(samples_t), "time data generated to", save_dir / f"samples_time.txt")
 
-        send(config.SAMPLE_SAVE_DIR / f"samples_{epoch}.txt")
-        send(config.SAMPLE_SAVE_DIR / f"samples_t_{epoch}.txt")
+        send(save_dir / f"samples.txt")
+        send(save_dir / f"samples_time.txt")
 
         # assert len(samples) == len(self.trajs)
         dist_des, dist_route = self.eval_density(*self.proc_density(samples))
